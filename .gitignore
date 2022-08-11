@@ -1,2 +1,3 @@
 content/
-testes/
+testes.ipynb
+__pycache__/
