@@ -6,16 +6,22 @@ from random import choice
 from torchvision import transforms
 import matplotlib.pyplot as plt
 
-def Image_Transformer():
+def Image_Transformer(size):
+    r"""
+    - Retorna um dicionário com três componentes: [train, test, inv].  
+    - Onde inv representa o inv_transformer e test apenas transforma para tensor. 
+    - train transforma a imagem para o treinamento do modelo.
+    """
     return {
         'train': transforms.Compose([
             transforms.ToTensor(),
+            transforms.Resize((size, 2*size)),
             transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-            transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
         ]),
         'test': transforms.Compose([
             transforms.ToTensor(),
+            transforms.Resize((size, 2*size)),
             transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
         ]),
         'inv': transforms.Compose([
@@ -25,18 +31,19 @@ def Image_Transformer():
     }
 
 class Dataset_Maps(Dataset):
-    def __init__(self, imgs_dir, size=(600, 300)):
+    def __init__(self, imgs_dir, size=256):
+        self.size = size
         self.imgs_dir = imgs_dir
         self.imgs_list = [str(l) for l in pathlib.Path(self.imgs_dir).glob('*/*.jpg')]
-        self.transformer = Image_Transformer()['train']
+        self.transformer = Image_Transformer(size=self.size)
     
     def __len__(self):
         return len(self.imgs_list)
     
     def __getitem__(self, index):
         img_pil = Image.open(self.imgs_list[index])
-        img_tensor = self.transformer(img_pil)
-        return (img_tensor[...,:600], img_tensor[...,600:]) # real_img, map_img
+        img_tensor = self.transformer['train'](img_pil)
+        return (img_tensor[...,:self.size], img_tensor[...,self.size:]) # real_img, map_img
 
 if __name__ == '__main__':
 
@@ -48,7 +55,7 @@ if __name__ == '__main__':
     print (f'real_img.shape: {real_img.shape}, real_img.min(): {real_img.min()}, real_img.max(): {real_img.max()}')
     print (f'map_img.shape: {map_img.shape}, map_img.min(): {map_img.min()}, map_img.max(): {map_img.max()}')
 
-    inv_transformer = Image_Transformer()['inv']
+    inv_transformer = Image_Transformer(256)['inv']
 
     img1 = inv_transformer(real_img)
     img2 = inv_transformer(map_img)
