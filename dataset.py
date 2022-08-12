@@ -31,9 +31,10 @@ def Image_Transformer(size):
     }
 
 class Dataset_Maps(Dataset):
-    def __init__(self, imgs_list, size=256):
+    def __init__(self, imgs_list, size=256, tipo='train'):
         self.size = size
         self.imgs_list = imgs_list
+        self.tipo = tipo
         self.transformer = Image_Transformer(size=self.size)
     
     def __len__(self):
@@ -41,7 +42,7 @@ class Dataset_Maps(Dataset):
     
     def __getitem__(self, index):
         img_pil = Image.open(self.imgs_list[index])
-        img_tensor = self.transformer['train'](img_pil)
+        img_tensor = self.transformer[self.tipo](img_pil)
         return (img_tensor[...,:self.size], img_tensor[...,self.size:]) # real_img, map_img
 
 if __name__ == '__main__':

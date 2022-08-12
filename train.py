@@ -137,14 +137,15 @@ assert os.path.exists(IMGS_DIR), f'Diretorio: {IMGS_DIR} invalido!!!!!'
 
 LOG_FILE = f'{PASTA_SIMULACAO}/LOG.txt'
 salvar_variaveis_log()
+print (f'log file: {LOG_FILE}')
 
 imgs_list = [str(l) for l in pathlib.Path(IMGS_DIR).glob('*/*.jpg')]
 shuffle(imgs_list)
 train_imgs_list = imgs_list[4:]
 test_imgs_list = imgs_list[:4]
 
-train_dataset = Dataset_Maps(train_imgs_list, size=IMG_SIZE)
-test_dataset = Dataset_Maps(test_imgs_list, size=IMG_SIZE)
+train_dataset = Dataset_Maps(train_imgs_list, size=IMG_SIZE, tipo='train')
+test_dataset = Dataset_Maps(test_imgs_list, size=IMG_SIZE, tipo='test')
 
 images_transformers = Image_Transformer(size=IMG_SIZE)
 dataloader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
