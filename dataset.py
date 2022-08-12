@@ -31,10 +31,9 @@ def Image_Transformer(size):
     }
 
 class Dataset_Maps(Dataset):
-    def __init__(self, imgs_dir, size=256):
+    def __init__(self, imgs_list, size=256):
         self.size = size
-        self.imgs_dir = imgs_dir
-        self.imgs_list = [str(l) for l in pathlib.Path(self.imgs_dir).glob('*/*.jpg')]
+        self.imgs_list = imgs_list
         self.transformer = Image_Transformer(size=self.size)
     
     def __len__(self):
@@ -48,7 +47,9 @@ class Dataset_Maps(Dataset):
 if __name__ == '__main__':
 
     imgs_dir = './content/maps/'
-    maps_dataset = Dataset_Maps(imgs_dir)
+    imgs_list = [str(l) for l in pathlib.Path(imgs_dir).glob('*/*.jpg')]
+
+    maps_dataset = Dataset_Maps(imgs_list)
     print (f'número de imagens: {len(maps_dataset)}')
     real_img, map_img = choice(maps_dataset)
 

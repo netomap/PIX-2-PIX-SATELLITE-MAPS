@@ -7,13 +7,14 @@ import os, sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
-from random import choice, random, randint
+from random import choice, random, randint, shuffle
 from models import Discriminator, Generator
 from dataset import Dataset_Maps, Image_Transformer
 from argparse import ArgumentParser
 from time import time
 from datetime import datetime
 from tqdm import tqdm
+import pathlib
 
 def debug(frase):
     frase = f'[{datetime.strftime(datetime.now(), "%H:%M:%S")}]: {frase}'
@@ -50,30 +51,38 @@ def imprimir_resultados(_generator, _dataset, _results, _inv_transformer):
     
     with torch.no_grad():
         _generator.eval()
-        real_img, map_img = choice(_dataset) # retorna em tensores
-        real_img.unsqueeze_(0) # adiciona uma dimensão para passar no generator
-        map_img.unsqueeze_(0)
-        pred_tensor = _generator(real_img)
-        pred_img = _inv_transformer(pred_tensor)[0] # pega a primeira imagem, pois só tem uma
 
-        real_img = _inv_transformer(real_img)[0]
-        map_img = _inv_transformer(map_img)[0]
+        imgs_result = []        
+        for real_img, map_img in _dataset: # retorna em tensores
+            real_img.unsqueeze_(0) # adiciona uma dimensão para passar no generator
+            map_img.unsqueeze_(0)
+            pred_tensor = _generator(real_img)
 
-        plt.figure(figsize=(20, 5))
-        plt.subplot(1, 3, 1)
-        plt.imshow(real_img)
-        plt.title('Real')
-        plt.grid(False)
+            pred_img = _inv_transformer(pred_tensor[0]) # pega a primeira imagem, pois só tem uma
+            real_img = _inv_transformer(real_img[0])
+            map_img = _inv_transformer(map_img[0])
+            imgs_result.append([real_img, map_img, pred_img])
 
-        plt.subplot(1, 3, 2)
-        plt.imshow(map_img)
-        plt.title('Target')
-        plt.grid(False)
+        plt.figure(figsize=(20, 25))
+        for k, (real_img, map_img, pred_img) in enumerate(imgs_result):
+            
+            plt.subplot(4, 3, 3*k+1)
+            plt.imshow(real_img)
+            plt.title('Real')
+            plt.grid(False)
+            plt.axis('off')
 
-        plt.subplot(1, 3, 3)
-        plt.imshow(pred_img)
-        plt.title('Pred')
-        plt.grid(False)
+            plt.subplot(4, 3, 3*k+2)
+            plt.imshow(map_img)
+            plt.title('Target')
+            plt.grid(False)
+            plt.axis('off')
+
+            plt.subplot(4, 3, 3*k+3)
+            plt.imshow(pred_img)
+            plt.title('Pred')
+            plt.grid(False)
+            plt.axis('off')
 
         plt.savefig(f'{PASTA_SIMULACAO}/images_{len(_results)}.png')
         # [time(), discriminator_fake_loss, discriminator_real_loss, generator_loss]
@@ -92,14 +101,14 @@ def imprimir_resultados(_generator, _dataset, _results, _inv_transformer):
 
 def salvar_variaveis_log():
     with open(LOG_FILE, 'w') as file:
-        file.write(args + '\n')
+        file.write(str(args) + '\n')
 
 parser = ArgumentParser()
-parser.add_argument('--e', type=int, default=200, help='Número de épocas no treinamento')
+parser.add_argument('--e', type=int, default=200, help='Numero de epocas no treinamento')
 parser.add_argument('--lr', type=float, default=1e-3, help='Learning Rate')
 parser.add_argument('--bs', type=int, default=64, help='Batch Size')
-parser.add_argument('--lp', type=str, default='./log', help='Log Path para salvar as imagens geradas a cada época.')
-parser.add_argument('--d', type=int, default=1, help='Debug do código para analisar treinamento.')
+parser.add_argument('--lp', type=str, default='./log', help='Log Path para salvar as imagens geradas a cada epoca.')
+parser.add_argument('--d', type=int, default=1, help='Debug do codigo para analisar treinamento.')
 parser.add_argument('--new', type=int, default=1, help='Simulacao nova? sim->1, nao->0')
 parser.add_argument('--ps', type=str, default='', help='Aproveitar um treinamento e dar continuidade.')
 parser.add_argument('--imgs', type=str, default='./content/maps', help='Diretorio onde estao as imagens.')
@@ -129,16 +138,23 @@ assert os.path.exists(IMGS_DIR), f'Diretorio: {IMGS_DIR} invalido!!!!!'
 LOG_FILE = f'{PASTA_SIMULACAO}/LOG.txt'
 salvar_variaveis_log()
 
-dataset = Dataset_Maps(IMGS_DIR, size=IMG_SIZE)
+imgs_list = [str(l) for l in pathlib.Path(IMGS_DIR).glob('*/*.jpg')]
+shuffle(imgs_list)
+train_imgs_list = imgs_list[4:]
+test_imgs_list = imgs_list[:4]
+
+train_dataset = Dataset_Maps(train_imgs_list, size=IMG_SIZE)
+test_dataset = Dataset_Maps(test_imgs_list, size=IMG_SIZE)
+
 images_transformers = Image_Transformer(size=IMG_SIZE)
-dataloader = DataLoader(dataset, BATCH_SIZE, shuffle=True)
-debug(f'numero de imagens: {len(dataset)}')
+dataloader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
+debug(f'numero de imagens: {len(train_dataset)}')
 debug(f'numero de batches: {len(dataloader)}')
 
 generator = Generator(in_channels=3, features=64)
 discriminator = Discriminator(in_channels=3, features=[64, 128, 256, 512])
 resultados = []
-debug('Criação dos modelos generator, discriminator.')
+debug('Criacao dos modelos generator, discriminator.')
 
 # INSERIR AQUI UM CARREGAMENTO DE ALGUMA SIMULAÇÃO ANTERIOR.
 if not(SIMULACAO_NOVA):
@@ -154,7 +170,7 @@ debug(f'Modelos jogados para o device: {DEVICE}')
 optimizer_generator = torch.optim.Adam(generator.parameters(), lr=LEARNING_RATE, betas=(0.5, .999))
 optimizer_discriminator = torch.optim.Adam(discriminator.parameters(), lr=LEARNING_RATE, betas=(0.5, .999))
 
-debug('Criando funções perdas.')
+debug('Criando funcoes perdas.')
 BCE = nn.BCEWithLogitsLoss().to(DEVICE)
 L1_LOSS = nn.L1Loss().to(DEVICE)
 
@@ -167,7 +183,7 @@ for epoch in range(EPOCHS):
 
     discriminator_real_loss, discriminator_fake_loss, generator_loss = 0, 0, 0
 
-    for x, y in tqdm(dataloader, ncols=400):
+    for x, y in tqdm(dataloader):
         x = x.to(DEVICE)
         y = y.to(DEVICE)
 
@@ -202,7 +218,7 @@ for epoch in range(EPOCHS):
         generator_loss += g_loss.item()
 
     vetor = [time(), discriminator_fake_loss, discriminator_real_loss, generator_loss]
-    resultados = np.vstack([resultados, vetor])
+    resultados = np.vstack([resultados, vetor]) if (len(resultados)>0) else np.array([vetor])
 
     salvar_checkpoint(discriminator, generator, resultados)
-    imprimir_resultados(generator, dataset, resultados, images_transformers['inv'])
+    imprimir_resultados(generator, test_dataset, resultados, images_transformers['inv'])
