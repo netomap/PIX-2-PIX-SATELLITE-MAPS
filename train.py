@@ -35,15 +35,15 @@ def criar_pasta_simulacao_nova():
     return pasta_nova_simulacao
 
 def carregar_checkpoints():
-    gen_state_dict = torch.load(f'{PASTA_SIMULACAO}/generator.pth', map_location=torch.device('cpu'))
-    disc_state_dict = torch.load(f'{PASTA_SIMULACAO}/discriminator.pth', map_location=torch.device('cpu'))
+    gen_state_dict = torch.load(f'{PASTA_SIMULACAO}/generator.pt', map_location=torch.device('cpu'))
+    disc_state_dict = torch.load(f'{PASTA_SIMULACAO}/discriminator.pt', map_location=torch.device('cpu'))
     resultados = np.load(f'{PASTA_SIMULACAO}/resultados.npy')
 
     return gen_state_dict, disc_state_dict, resultados
 
 def salvar_checkpoint(_discriminator, _generator, _resultados):
-    torch.save(_discriminator, f'{PASTA_SIMULACAO}/discriminator.pth')
-    torch.save(_generator, f'{PASTA_SIMULACAO}/generator.pth')
+    torch.save(_discriminator.state_dict(), f'{PASTA_SIMULACAO}/discriminator.pt')
+    torch.save(_generator.state_dict(), f'{PASTA_SIMULACAO}/generator.pt')
     np.save(f'{PASTA_SIMULACAO}/resultados', np.array(_resultados))
     debug('Modelos salvos!')
 
