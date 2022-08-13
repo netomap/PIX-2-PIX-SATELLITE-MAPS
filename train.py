@@ -56,7 +56,7 @@ def imprimir_resultados(_generator, _dataset, _results, _inv_transformer):
         for real_img, map_img in _dataset: # retorna em tensores
             real_img.unsqueeze_(0) # adiciona uma dimensão para passar no generator
             map_img.unsqueeze_(0)
-            pred_tensor = _generator(real_img)
+            pred_tensor = _generator(real_img.to(DEVICE))
 
             pred_img = _inv_transformer(pred_tensor[0]) # pega a primeira imagem, pois só tem uma
             real_img = _inv_transformer(real_img[0])
