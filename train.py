@@ -53,10 +53,12 @@ def imprimir_resultados(_generator, _dataset, _results, _inv_transformer):
     
     test_dataloader = DataLoader(_dataset, batch_size=len(_dataset))
     real_imgs_batch, target_imgs_batch = next(iter(test_dataloader))
+    real_imgs_batch = real_imgs_batch.to(DEVICE)
+    target_imgs_batch = target_imgs_batch.to(DEVICE)
     
     _generator.eval()
     with torch.no_grad():
-        pred_imgs_batch = _generator(real_imgs_batch.to(DEVICE))
+        pred_imgs_batch = _generator(real_imgs_batch)
     
     tensors = torch.vstack([real_imgs_batch, target_imgs_batch, pred_imgs_batch])
     tensors = tensors.detach().cpu()
