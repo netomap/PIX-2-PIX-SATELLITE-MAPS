@@ -1,7 +1,7 @@
-from imaplib import IMAP4_SSL
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from torchvision.utils import make_grid
 import numpy as np
 import os, sys
 import matplotlib.pyplot as plt
@@ -15,6 +15,8 @@ from time import time
 from datetime import datetime
 from tqdm import tqdm
 import pathlib
+import warnings
+warnings.filterwarnings('ignore')
 
 def debug(frase):
     frase = f'[{datetime.strftime(datetime.now(), "%H:%M:%S")}]: {frase}'
@@ -49,55 +51,29 @@ def salvar_checkpoint(_discriminator, _generator, _resultados):
 
 def imprimir_resultados(_generator, _dataset, _results, _inv_transformer):
     
+    test_dataloader = DataLoader(_dataset, batch_size=len(_dataset))
+    real_imgs_batch, target_imgs_batch = next(iter(test_dataloader))
+    
+    _generator.eval()
     with torch.no_grad():
-        _generator.eval()
+        pred_imgs_batch = _generator(real_imgs_batch.to(DEVICE))
+    
+    tensors = torch.vstack([real_imgs_batch, target_imgs_batch, pred_imgs_batch])
+    tensors = tensors.detach().cpu()
+    imgs_tensor_grid = make_grid(tensors, nrow=4, padding=3)
+    imgs_pil = _inv_transformer(imgs_tensor_grid)
+    
+    imgs_pil.save(f'{PASTA_SIMULACAO}/images.png')
 
-        imgs_result = []        
-        for real_img, map_img in _dataset: # retorna em tensores
-            real_img.unsqueeze_(0) # adiciona uma dimensão para passar no generator
-            map_img.unsqueeze_(0)
-            pred_tensor = _generator(real_img.to(DEVICE))
+    # salvando a evolução das imagens num vetor numpy para depois fazer uma análise dessa evolução
 
-            pred_img = _inv_transformer(pred_tensor[0]) # pega a primeira imagem, pois só tem uma
-            real_img = _inv_transformer(real_img[0])
-            map_img = _inv_transformer(map_img[0])
-            imgs_result.append([real_img, map_img, pred_img])
-
-        plt.figure(figsize=(20, 25))
-        for k, (real_img, map_img, pred_img) in enumerate(imgs_result):
-            
-            plt.subplot(4, 3, 3*k+1)
-            plt.imshow(real_img)
-            plt.title('Real')
-            plt.grid(False)
-            plt.axis('off')
-
-            plt.subplot(4, 3, 3*k+2)
-            plt.imshow(map_img)
-            plt.title('Target')
-            plt.grid(False)
-            plt.axis('off')
-
-            plt.subplot(4, 3, 3*k+3)
-            plt.imshow(pred_img)
-            plt.title('Pred')
-            plt.grid(False)
-            plt.axis('off')
-
-        plt.savefig(f'{PASTA_SIMULACAO}/images_{len(_results)}.png')
-        # [time(), discriminator_fake_loss, discriminator_real_loss, generator_loss]
-        
-        plt.figure(figsize=(20, 5))
-        plt.subplot(1, 2, 1)
-        plt.plot(_results[:,1], label='fake')
-        plt.plot(_results[:,2], label='real')
-        plt.legend()
-        plt.title('Discriminator loss')
-
-        plt.subplot(1, 2, 2)
-        plt.plot(_results[:,3])
-        plt.title('Generator Loss')
-        plt.savefig(f'{PASTA_SIMULACAO}/results_{len(_results)}.png')
+    imgs_numpy = np.array(imgs_pil)
+    if not(os.path.exists(f'{PASTA_SIMULACAO}/evolution.npy')):
+        np.save(f'{PASTA_SIMULACAO}/evolution', [imgs_numpy])
+    else:
+        evolution_array = np.load(f'{PASTA_SIMULACAO}/evolution.npy')
+        evolution_array = np.concatenate([evolution_array, [imgs_numpy]])
+        np.save(f'{PASTA_SIMULACAO}/evolution', evolution_array)
 
 def salvar_variaveis_log():
     with open(LOG_FILE, 'w') as file:
