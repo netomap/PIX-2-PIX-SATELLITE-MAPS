@@ -166,6 +166,7 @@ for epoch in range(EPOCHS):
 
     discriminator.train()
     generator.train()
+    print (f'epoch: {epoch}, lr: {generator_Scheduler.get_lr()}')
 
     discriminator_real_loss, discriminator_fake_loss, generator_loss = 0, 0, 0
 
