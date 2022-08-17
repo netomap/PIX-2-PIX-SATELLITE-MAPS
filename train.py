@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 import numpy as np
@@ -92,6 +93,7 @@ parser.add_argument('--ps', type=str, default='', help='Aproveitar um treinament
 parser.add_argument('--imgs', type=str, default='./content/maps', help='Diretorio onde estao as imagens.')
 parser.add_argument('--l1', type=int, default=100, help='L1-LAMBDA. Fator multiplicativo no treinamento do generator.')
 parser.add_argument('--imgsize', type=int, default=256, help='IMG_SIZE. Tamanho das imagens para redimensionar.')
+parser.add_argument('--gamma', type=float, default=0.6, help='Fator Multiplicativo do Learning Rate a cada sequencia de epocas.')
 
 args = parser.parse_args()
 EPOCHS = args.e
@@ -105,6 +107,7 @@ IMGS_DIR = args.imgs
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 L1_LAMBDA = args.l1
 IMG_SIZE = args.imgsize
+GAMMA = args.gamma
 
 if (SIMULACAO_NOVA):
     PASTA_SIMULACAO = criar_pasta_simulacao_nova()
@@ -148,6 +151,10 @@ debug(f'Modelos jogados para o device: {DEVICE}')
 
 optimizer_generator = torch.optim.Adam(generator.parameters(), lr=LEARNING_RATE, betas=(0.5, .999))
 optimizer_discriminator = torch.optim.Adam(discriminator.parameters(), lr=LEARNING_RATE, betas=(0.5, .999))
+
+MILESTONES = [30, 60, 90]
+generator_Scheduler = MultiStepLR(optimizer_generator, milestones=MILESTONES, gamma=GAMMA)
+discriminator_Scheduler = MultiStepLR(optimizer_discriminator, milestones=MILESTONES, gamma=GAMMA)
 
 debug('Criando funcoes perdas.')
 BCE = nn.BCEWithLogitsLoss().to(DEVICE)
@@ -198,6 +205,9 @@ for epoch in range(EPOCHS):
 
     vetor = [time(), discriminator_fake_loss, discriminator_real_loss, generator_loss]
     resultados = np.vstack([resultados, vetor]) if (len(resultados)>0) else np.array([vetor])
+
+    generator_Scheduler.step()
+    discriminator_Scheduler.step()
 
     salvar_checkpoint(discriminator, generator, resultados)
     imprimir_resultados(generator, test_dataset, resultados, images_transformers['inv'])
