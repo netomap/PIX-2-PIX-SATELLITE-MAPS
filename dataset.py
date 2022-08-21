@@ -31,7 +31,7 @@ def Image_Transformer(size):
     }
 
 class Dataset_Maps(Dataset):
-    def __init__(self, imgs_list, size=256, tipo='train'):
+    def __init__(self, imgs_list, size=128, tipo='train'):
         self.size = size
         self.imgs_list = imgs_list
         self.tipo = tipo
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     print (f'real_img.shape: {real_img.shape}, real_img.min(): {real_img.min()}, real_img.max(): {real_img.max()}')
     print (f'map_img.shape: {map_img.shape}, map_img.min(): {map_img.min()}, map_img.max(): {map_img.max()}')
 
-    inv_transformer = Image_Transformer(256)['inv']
+    inv_transformer = Image_Transformer(128)['inv']
 
     img1 = inv_transformer(real_img)
     img2 = inv_transformer(map_img)

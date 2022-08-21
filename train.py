@@ -92,7 +92,7 @@ parser.add_argument('--new', type=int, default=1, help='Simulacao nova? sim->1, 
 parser.add_argument('--ps', type=str, default='', help='Aproveitar um treinamento e dar continuidade.')
 parser.add_argument('--imgs', type=str, default='./content/maps', help='Diretorio onde estao as imagens.')
 parser.add_argument('--l1', type=int, default=100, help='L1-LAMBDA. Fator multiplicativo no treinamento do generator.')
-parser.add_argument('--imgsize', type=int, default=256, help='IMG_SIZE. Tamanho das imagens para redimensionar.')
+parser.add_argument('--imgsize', type=int, default=128, help='IMG_SIZE. Tamanho das imagens para redimensionar.')
 parser.add_argument('--gamma', type=float, default=0.6, help='Fator Multiplicativo do Learning Rate a cada sequencia de epocas.')
 
 args = parser.parse_args()
@@ -134,7 +134,7 @@ debug(f'numero de imagens: {len(train_dataset)}')
 debug(f'numero de batches: {len(dataloader)}')
 
 generator = Generator(in_channels=3, features=64)
-discriminator = Discriminator(in_channels=3, features=[64, 128, 256, 512])
+discriminator = Discriminator(in_channels=3, features=[128, 256, 512])
 resultados = []
 debug('Criacao dos modelos generator, discriminator.')
 

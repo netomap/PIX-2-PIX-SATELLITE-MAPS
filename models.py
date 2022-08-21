@@ -15,7 +15,7 @@ class Bloco_Disc(nn.Module):
 
 class Discriminator(nn.Module):
 
-    def __init__(self, in_channels, features=[64, 128, 256, 512]):
+    def __init__(self, in_channels, features=[128, 256, 512]):
         super(Discriminator, self).__init__()
         self.conv_inicial = nn.Sequential(
             nn.Conv2d(in_channels*2, features[0], 4, 2, 1, padding_mode='reflect'),
@@ -42,8 +42,8 @@ class Discriminator(nn.Module):
         return self.model(x2)
 
 def test_Discriminator():
-    x = torch.rand((5, 3, 256, 256))
-    y = torch.rand((5, 3, 256, 256))
+    x = torch.rand((5, 3, 128, 128))
+    y = torch.rand((5, 3, 128, 128))
     discriminator = Discriminator(in_channels=3)
     output = discriminator(x, y)
     print (f'Testando discriminator...')
@@ -91,12 +91,12 @@ class Generator(nn.Module):
         self.conv3 = Bloco_CNN(features*4, features*8, tipo='conv', ativacao='leaky', usar_dropout=False)
         self.conv4 = Bloco_CNN(features*8, features*8, tipo='conv', ativacao='leaky', usar_dropout=False)
         self.conv5 = Bloco_CNN(features*8, features*8, tipo='conv', ativacao='leaky', usar_dropout=False)
-        self.conv6 = Bloco_CNN(features*8, features*8, tipo='conv', ativacao='leaky', usar_dropout=False)
+        # self.conv6 = Bloco_CNN(features*8, features*8, tipo='conv', ativacao='leaky', usar_dropout=False)
 
         self.bottleneck = nn.Sequential(nn.Conv2d(features*8, features*8, kernel_size=4, stride=2, padding=1), nn.ReLU())
 
-        self.up1 = Bloco_CNN(features*8, features*8, tipo='convT', ativacao='relu', usar_dropout=True)
-        self.up2 = Bloco_CNN(features*8*2, features*8, tipo='convT', ativacao='relu', usar_dropout=True)
+        # self.up1 = Bloco_CNN(features*8, features*8, tipo='convT', ativacao='relu', usar_dropout=True)
+        self.up2 = Bloco_CNN(features*8, features*8, tipo='convT', ativacao='relu', usar_dropout=True)
         self.up3 = Bloco_CNN(features*8*2, features*8, tipo='convT', ativacao='relu', usar_dropout=True)
         self.up4 = Bloco_CNN(features*8*2, features*8, tipo='convT', ativacao='relu', usar_dropout=False)
         self.up5 = Bloco_CNN(features*8*2, features*4, tipo='convT', ativacao='relu', usar_dropout=False)
@@ -115,12 +115,13 @@ class Generator(nn.Module):
         x4 = self.conv3(x3)
         x5 = self.conv4(x4)
         x6 = self.conv5(x5)
-        x7 = self.conv6(x6)
+        # x7 = self.conv6(x6)
         
-        bottleneck = self.bottleneck(x7)
+        bottleneck = self.bottleneck(x6)
 
-        up1 = self.up1(bottleneck)
-        up2 = self.up2(torch.cat([up1, x7], 1))
+        # up1 = self.up1(bottleneck)
+        # up2 = self.up2(torch.cat([up1, x7], 1))
+        up2 = self.up2(bottleneck)
         up3 = self.up3(torch.cat([up2, x6], 1))
         up4 = self.up4(torch.cat([up3, x5], 1))
         up5 = self.up5(torch.cat([up4, x4], 1))
@@ -132,7 +133,7 @@ class Generator(nn.Module):
 
 def test_generator():
     generator = Generator(3, 64)
-    random_input = torch.rand(size=(5, 3, 256, 256))
+    random_input = torch.rand(size=(5, 3, 128, 128))
     output = generator(random_input)
     print (f'Testando generator...')
     print (f'random_input.shape: {random_input.shape}, output.shape: {output.shape}')
